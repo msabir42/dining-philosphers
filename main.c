@@ -8,120 +8,82 @@
 
 long start_timer;
 
-pthread_mutex_t lock;
-pthread_mutex_t print_lock;
+pthread_mutex_t waiter;
 
-
-void time_init()
-{
-    struct timeval t_val;
-    gettimeofday(&t_val, NULL);
-    start_timer = t_val.tv_sec * 1000L + t_val.tv_usec / 1000L;
-}
-
-int get_time()
-{
-    struct timeval t_val;
-    gettimeofday(&t_val, NULL);
-    long time = t_val.tv_sec * 1000L + t_val.tv_usec / 1000L - start_timer;
-    return (int)time;
-}
 
 
 void* routine(void* arg)
 {
     t_philosopher *philo = (t_philosopher *)arg;
-
-    if (philo->id % 2 == 0)
-        usleep(1000);
+    t_rules *rules = philo->rules;
+    int left = philo->id;
+    int right = (philo->id + 1) % rules->number_of_philosophers;
 
     while (1)
     {
-        pthread_mutex_t *first = philo->left_fork;
-        pthread_mutex_t *second = philo->right_fork;
-
-        if (first > second)
+        pthread_mutex_lock(&rules->waiter);
+        if (rules->forks_available[left] && rules->forks_available[right])
         {
-            pthread_mutex_t *tmp = first;
-            first = second;
-            second = tmp;
+            rules->forks_available[left] = 0;
+            rules->forks_available[right] = 0;
+            pthread_mutex_unlock(&rules->waiter);
+
+            printf("%d %d is eating\n", get_time(rules->start_timer), philo->id);
+            usleep(rules->time_to_eat * 1000);
+
+            pthread_mutex_lock(&rules->waiter);
+            rules->forks_available[left] = 1;
+            rules->forks_available[right] = 1;
+            pthread_mutex_unlock(&rules->waiter);
+
+            printf("%d %d is sleeping\n", get_time(rules->start_timer), philo->id);
+            usleep(rules->time_to_sleep * 1000);
+
+            printf("%d %d is thinking\n", get_time(rules->start_timer), philo->id);
         }
-
-        pthread_mutex_lock(first);
-        pthread_mutex_lock(second);
-
-        
-        pthread_mutex_lock(&print_lock);
-        printf("%d %d is eating\n", get_time(), philo->id);
-        pthread_mutex_unlock(&print_lock);
-
-        usleep(200 * 1000); 
-
-        pthread_mutex_unlock(second);
-        pthread_mutex_unlock(first);
-
-        pthread_mutex_lock(&print_lock);
-        printf("%d %d is sleeping\n", get_time(), philo->id);
-        pthread_mutex_unlock(&print_lock);
-
-        usleep(200 * 1000); 
-
-        pthread_mutex_lock(&print_lock);
-        printf("%d %d is thinking\n", get_time(), philo->id);
-        pthread_mutex_unlock(&print_lock);
+        else
+        {
+            pthread_mutex_unlock(&rules->waiter);
+            usleep(1000);
+        }
     }
-
     return NULL;
 }
 
-void *activities(void *arg)
-{
-    pthread_mutex_lock(&lock);
-    int id = *(int *)arg;
-    free(arg);
-    usleep(2000);
+void init_philosophers(t_philosopher *philosophers, t_rules *rules, int n, void *routine);
 
-    printf("%d ms philosopher %d has taken a fork\n", get_time(), id);
-    pthread_mutex_unlock(&lock);
 
-    return NULL;
-}
 
 int main(int argc, char **argv)
 {
-    srand(time(NULL));
-    time_init();
-
-    if (argc != 2)
-    {
-        fprintf(stderr, "Usage: %s number_of_philosophers\n", argv[0]);
+    if (argc != 5 && argc != 6) {
+        fprintf(stderr, "Usage: %s n_philo t_die t_eat t_sleep [n_eat]\n", argv[0]);
         return 1;
     }
 
-    int number_of_philosophers = atoi(argv[1]);
-    if (number_of_philosophers <= 0)
-    {
-        fprintf(stderr, "Philosopher count must be positive\n");
+    t_rules rules;
+    rules.number_of_philosophers = atoi(argv[1]);
+    rules.time_to_die = atoi(argv[2]);
+    rules.time_to_eat = atoi(argv[3]);
+    rules.time_to_sleep = atoi(argv[4]);
+    rules.number_of_times_each_philosopher_must_eat = (argc == 6) ? atoi(argv[5]) : -1;
+    rules.forks_available = malloc(sizeof(int) * rules.number_of_philosophers);
+    for (int i = 0; i < rules.number_of_philosophers; i++)
+        rules.forks_available[i] = 1;
+    pthread_mutex_init(&rules.waiter, NULL);
+    time_init(&rules.start_timer);
+
+    t_philosopher *philosophers = malloc(sizeof(t_philosopher) * rules.number_of_philosophers);
+    if (!philosophers)
         return 1;
-    }
 
-    pthread_mutex_t *forks = malloc(sizeof(pthread_mutex_t) * number_of_philosophers);
-    t_philosopher *philosophers = malloc(sizeof(t_philosopher) * number_of_philosophers);
-    if (!forks || !philosophers)
-        return 1;
+    init_philosophers(philosophers, &rules, rules.number_of_philosophers, routine);
 
-    for (int i = 0; i < number_of_philosophers; i++)
-        pthread_mutex_init(&forks[i], NULL);
-
-    init_philosophers(philosophers, forks, number_of_philosophers, routine);
-
-    for (int i = 0; i < number_of_philosophers; i++)
+    for (int i = 0; i < rules.number_of_philosophers; i++)
         pthread_join(philosophers[i].thread, NULL);
 
-    for (int i = 0; i < number_of_philosophers; i++)
-        pthread_mutex_destroy(&forks[i]);
-
-    free(forks);
+    pthread_mutex_destroy(&rules.waiter);
+    free(rules.forks_available);
     free(philosophers);
     return 0;
 }
