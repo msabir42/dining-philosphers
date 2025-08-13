@@ -22,6 +22,10 @@ typedef struct s_philosopher {
     int id;
     pthread_t thread;
     t_rules *rules;
+    long last_meal_eaten_time;
+    int meals_eaten;
+    int is_dead;
+
 } t_philosopher;
 
 
