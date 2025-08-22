@@ -1,25 +1,20 @@
-#include "philo.h"
+#include "philosophers.h"
 
-#include <time.h>
-#include <sys/time.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
-
-void time_init(long *start_timer)
+long	get_current_time(void)
 {
-    struct timeval t_val;
-    gettimeofday(&t_val, NULL);
-    *start_timer = t_val.tv_sec * 1000L + t_val.tv_usec / 1000L;
+	struct timeval	tv;
+
+	gettimeofday(&tv, NULL);
+	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
 
-int get_time(long start_timer)
+void	ft_usleep(int ms)
 {
-    struct timeval t_val;
-    gettimeofday(&t_val, NULL);
-    long time = t_val.tv_sec * 1000L + t_val.tv_usec / 1000L - start_timer;
-    return (int)time;
-}
+	long	start_time;
 
- 
+	start_time = get_current_time();
+	while ((get_current_time() - start_time) < ms)
+	{
+		usleep(100);
+	}
+}
