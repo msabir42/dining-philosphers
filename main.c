@@ -1,53 +1,63 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: msabir <msabir@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/08/23 15:33:09 by msabir            #+#    #+#             */
+/*   Updated: 2025/08/23 15:33:10 by msabir           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philosophers.h"
 
-int	check(int argc, char **argv)
+int check(int argc, char **argv)
 {
-	int	i;
+    int i;
 
-	if (argc == 6 || argc == 5)
-	{
-		i = 1;
-		while (argv[i])
-		{
-			if (!is_number(argv[i]))
-			{
-				error_in_arg(i);
-				return (0);
-			}
-			i++;
-		}
-		if (!chek_max_int(argv))
-			return (0);
-		return (1);
-	}
-	else
-	{
-		put_str("ERROR: The number of argments must be 5 or 6\n", 2);
-		return (0);
-	}
+    if (argc != 5 && argc != 6)
+    {
+        put_string("ERROR: The number of arguments must be 5 or 6\n", 2);
+        return 0;
+    }
+
+    for (i = 1; i < argc; i++)
+    {
+        if (!is_number(argv[i]))
+        {
+            error_in_arg(i);
+            return 0;
+        }
+        if (!check_max_int(argv[i]))
+            return 0;
+    }
+    return 1;
 }
 
-int	main(int ac, char **av)
+int main(int argc, char **argv)
 {
-	t_simulation	simulation;
-	int		i;
+    t_simulation simulation;
+    int i;
 
-	i = 0;
-	if (!check_arg(ac, av))
-		return (0);
-	init_philo(&simulation, ac, av);
-	if (simulation.time_sleep > simulation.time_die)
-		simulation.time_sleep = simulation.time_die;
-	if (simulation.time_eat > simulation.time_die)
-		simulation.time_eat = simulation.time_die;
-	init_mutex(&simulation);
-	create_thread(&simulation);
-	while (i < simulation.nb)
-	{
-		pthread_join(simulation.philo[i].thread, NULL);
-		i++;
-	}
-	free(simulation.fork);
-	free(simulation.philo);
-	return (0);
+    if (!check(argc, argv))
+        return 1;
+
+    init_philo(&simulation, argc, argv);
+
+    if (simulation.time_sleep > simulation.time_die)
+        simulation.time_sleep = simulation.time_die;
+    if (simulation.time_eat > simulation.time_die)
+        simulation.time_eat = simulation.time_die;
+
+    init_mutexes(&simulation);
+    create_philosophers(&simulation);
+
+    for (i = 0; i < simulation.number_of_philosophers; i++)
+        pthread_join(simulation.philosopher[i].philosopher, NULL);
+
+    free(simulation.fork);
+    free(simulation.philosopher);
+
+    return 0;
 }

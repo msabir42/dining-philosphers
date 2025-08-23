@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   checkers.c                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: msabir <msabir@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/08/23 15:33:14 by msabir            #+#    #+#             */
+/*   Updated: 2025/08/23 15:33:15 by msabir           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philosophers.h"
 
 int is_died(t_philosophers *philosopher, t_simulation *simulation)
@@ -27,13 +39,13 @@ int is_died(t_philosophers *philosopher, t_simulation *simulation)
     return (0);
 }
 
-int philosopher_saturation(t_philosophers *philosopher,
+int philosopher_saturation(
                            t_simulation *simulation)
 {
    	pthread_mutex_lock(&simulation->mutex_count_meal);
 	if (simulation->arg_6)
 	{
-		if (simulation->count_meal >= simulation->must_eat * simulation->number_of_philosophers)
+		if (simulation->count_meal >= (size_t)simulation->must_eat * (size_t)simulation->number_of_philosophers)
 		{
 			pthread_mutex_lock(&simulation->mutex_printf);
 			pthread_mutex_lock(&simulation->mutex_stop);
@@ -56,11 +68,11 @@ int is_end_simulation(t_simulation *simulation)
 	i = 0;
 	while (i < simulation->number_of_philosophers)
 	{
-		if (!check_death(simulation, i))
+		if (!is_died(simulation->philosopher, simulation))
 		{
 			return (0);
 		}
-		if (!check_full(simulation))
+		if (!philosopher_saturation(simulation))
 		{
 			return (0);
 		}
