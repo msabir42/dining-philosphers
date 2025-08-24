@@ -3,49 +3,46 @@
 /*                                                        :::      ::::::::   */
 /*   checkers.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: msabir <msabir@student.42.fr>              +#+  +:+       +#+        */
+/*   By: abouramt <abouramt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 15:33:14 by msabir            #+#    #+#             */
-/*   Updated: 2025/08/23 15:33:15 by msabir           ###   ########.fr       */
+/*   Updated: 2025/08/23 20:33:44 by abouramt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosophers.h"
 
-int is_died(t_philosophers *philosopher, t_simulation *simulation)
+int	is_died(t_philosophers *philosopher, t_simulation *simulation)
 {
-    pthread_mutex_lock(&simulation->mutex_last_eat);
-    if ( get_current_time() - philosopher->last_eat_time > simulation->time_die)
-    {
-        pthread_mutex_unlock(&simulation->mutex_last_eat);
-
-        pthread_mutex_lock(&simulation->mutex_stop);
-        if (!simulation->stop) 
-        {
-            simulation->stop = 1;
-            pthread_mutex_unlock(&simulation->mutex_stop);
-
-            pthread_mutex_lock(&simulation->mutex_printf);
-            printf("%ld %d died\n",  get_current_time()  - simulation->start_time,
-                   philosopher->id + 1);
-            pthread_mutex_unlock(&simulation->mutex_printf);
-        }
-        else
-            pthread_mutex_unlock(&simulation->mutex_stop);
-
-        return (1);
-    }
-    pthread_mutex_unlock(&simulation->mutex_last_eat);
-    return (0);
+	pthread_mutex_lock(&simulation->mutex_last_eat);
+	if (get_current_time() - philosopher->last_eat_time > simulation->time_die)
+	{
+		pthread_mutex_unlock(&simulation->mutex_last_eat);
+		pthread_mutex_lock(&simulation->mutex_stop);
+		if (!simulation->stop)
+		{
+			simulation->stop = 1;
+			pthread_mutex_unlock(&simulation->mutex_stop);
+			pthread_mutex_lock(&simulation->mutex_printf);
+			printf("%ld %d died\n", get_current_time() - simulation->start_time,
+				philosopher->id);
+			pthread_mutex_unlock(&simulation->mutex_printf);
+		}
+		else
+			pthread_mutex_unlock(&simulation->mutex_stop);
+		return (1);
+	}
+	pthread_mutex_unlock(&simulation->mutex_last_eat);
+	return (0);
 }
 
-int philosopher_saturation(
-                           t_simulation *simulation)
+int	philosopher_saturation(t_simulation *simulation)
 {
-   	pthread_mutex_lock(&simulation->mutex_count_meal);
+	pthread_mutex_lock(&simulation->mutex_count_meal);
 	if (simulation->arg_6)
 	{
-		if (simulation->count_meal >= (size_t)simulation->must_eat * (size_t)simulation->number_of_philosophers)
+		if (simulation->count_meal >= (size_t)simulation->must_eat
+			* (size_t)simulation->number_of_philosophers)
 		{
 			pthread_mutex_lock(&simulation->mutex_printf);
 			pthread_mutex_lock(&simulation->mutex_stop);
@@ -61,21 +58,17 @@ int philosopher_saturation(
 	return (1);
 }
 
-int is_end_simulation(t_simulation *simulation)
+int	is_end_simulation(t_simulation *simulation)
 {
-   int	i;
+	int	i;
 
 	i = 0;
 	while (i < simulation->number_of_philosophers)
 	{
-		if (!is_died(simulation->philosopher, simulation))
-		{
+		if (is_died(&simulation->philosopher[i], simulation))
 			return (0);
-		}
 		if (!philosopher_saturation(simulation))
-		{
 			return (0);
-		}
 		i++;
 	}
 	return (1);

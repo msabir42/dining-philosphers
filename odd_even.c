@@ -6,32 +6,41 @@
 /*   By: msabir <msabir@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/23 15:33:22 by msabir            #+#    #+#             */
-/*   Updated: 2025/08/23 15:33:23 by msabir           ###   ########.fr       */
+/*   Updated: 2025/08/24 03:24:46 by msabir           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosophers.h"
 
-int odd_case(t_simulation *simulation, t_philosophers *philo)
+void	print_fork_taken(t_simulation *simulation, t_philosophers *philo)
 {
-	pthread_mutex_lock(&(simulation->fork[philo->id % simulation->number_of_philosophers]));
+	printf("%ld %d %s", get_current_time() - simulation->start_time,
+		philo->id, "has taken a fork\n");
+}
+
+int	take_first_fork_odd(t_simulation *simulation, t_philosophers *philo)
+{
+	pthread_mutex_lock(&(simulation->fork[philo->id
+			% simulation->number_of_philosophers]));
 	pthread_mutex_lock(&simulation->mutex_printf);
 	if (!simulation->stop)
-	{
-		printf("%ld %d %s", get_current_time() - simulation->start_time, philo->id,
-			"has taken a fork\n");
-	}
+		print_fork_taken(simulation, philo);
 	else
 	{
 		unlock_lock(simulation, philo);
 		return (0);
 	}
 	pthread_mutex_unlock(&simulation->mutex_printf);
-	pthread_mutex_lock(&(simulation->fork[(philo->id - 1) % simulation->number_of_philosophers]));
+	return (1);
+}
+
+int	take_second_fork_odd(t_simulation *simulation, t_philosophers *philo)
+{
+	pthread_mutex_lock(&(simulation->fork[(philo->id - 1)
+			% simulation->number_of_philosophers]));
 	pthread_mutex_lock(&simulation->mutex_printf);
 	if (!simulation->stop)
-		printf("%ld %d %s", get_current_time() - simulation->start_time, philo->id,
-			"has taken a fork\n");
+		print_fork_taken(simulation, philo);
 	else
 	{
 		pthread_mutex_unlock(&simulation->mutex_printf);
@@ -41,24 +50,29 @@ int odd_case(t_simulation *simulation, t_philosophers *philo)
 	return (1);
 }
 
-int	even_case(t_simulation *simulation, t_philosophers *philo)
+int	take_first_fork_even(t_simulation *simulation, t_philosophers *philo)
 {
-	pthread_mutex_lock(&(simulation->fork[(philo->id - 1) % simulation->number_of_philosophers]));
+	pthread_mutex_lock(&(simulation->fork[(philo->id - 1)
+			% simulation->number_of_philosophers]));
 	pthread_mutex_lock(&simulation->mutex_printf);
 	if (!simulation->stop)
-		printf("%ld %d %s", get_current_time() - simulation->start_time, philo->id,
-			"has taken a fork\n");
+		print_fork_taken(simulation, philo);
 	else
 	{
 		unlock_lock(simulation, philo);
 		return (0);
 	}
 	pthread_mutex_unlock(&simulation->mutex_printf);
-	pthread_mutex_lock(&(simulation->fork[philo->id % simulation->number_of_philosophers]));
+	return (1);
+}
+
+int	take_second_fork_even(t_simulation *simulation, t_philosophers *philo)
+{
+	pthread_mutex_lock(&(simulation->fork[philo->id
+			% simulation->number_of_philosophers]));
 	pthread_mutex_lock(&simulation->mutex_printf);
 	if (!simulation->stop)
-		printf("%ld %d %s", get_current_time() - simulation->start_time, philo->id,
-			"has taken a fork\n");
+		print_fork_taken(simulation, philo);
 	else
 	{
 		pthread_mutex_unlock(&simulation->mutex_printf);
@@ -66,18 +80,4 @@ int	even_case(t_simulation *simulation, t_philosophers *philo)
 	}
 	pthread_mutex_unlock(&simulation->mutex_printf);
 	return (1);
-}
-
-void	unlock_lock(t_simulation *simulation, t_philosophers *philo)
-{
-	if (philo->id % 2 == 0)
-	{
-		pthread_mutex_unlock(&simulation->mutex_printf);
-		pthread_mutex_lock(&(simulation->fork[(philo->id - 1) % simulation->number_of_philosophers]));
-	}
-	else
-	{
-		pthread_mutex_unlock(&simulation->mutex_printf);
-		pthread_mutex_lock(&(simulation->fork[philo->id % simulation->number_of_philosophers]));
-	}
 }

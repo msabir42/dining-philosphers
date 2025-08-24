@@ -1,6 +1,6 @@
 NAME := philo
 CC := cc
-CFLAGS := -Wall -Wextra -Werror -pthread
+CFLAGS := -Wall -Wextra -Werror 
 SRC := main.c checkers.c time.c mutexes.c routine.c parsing.c init_philosophers.c odd_even.c strategy.c realese.c 
 OBJ := $(SRC:.c=.o)
 
